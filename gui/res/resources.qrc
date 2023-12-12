@@ -9,5 +9,11 @@
     <file>chiaki_macos.svg</file>
     <file>console-ps4.svg</file>
     <file>console-ps5.svg</file>
+    <file>focused_btn_bg.png</file>
+    <file>PS4.svg</file>
+    <file>PS5.svg</file>
+    <file>focused_settings_btn.png</file>
+    <file>Gear.png</file>
+    <file>AddConsole.svg</file>
   </qresource>
 </RCC>

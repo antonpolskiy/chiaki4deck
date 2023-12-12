@@ -76,7 +76,7 @@ MainWindow::MainWindow(Settings *settings, QWidget *parent)
 	: QMainWindow(parent),
 	settings(settings)
 {
-	setWindowTitle(qApp->applicationName());
+    setWindowTitle(qApp->applicationName());
 
 	auto main_widget = new QWidget(this);
 	auto layout = new QVBoxLayout();

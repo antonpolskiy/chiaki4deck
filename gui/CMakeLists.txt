@@ -1,6 +1,7 @@
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui Concurrent Multimedia OpenGL Svg)
 if(APPLE)
@@ -50,7 +51,12 @@ set(SOURCE_FILES
 	include/controllermanager.h
 	src/controllermanager.cpp
 	include/loginpindialog.h
-	src/loginpindialog.cpp)
+        src/loginpindialog.cpp
+        SteamDeckMainWindow.h
+        SteamDeckMainWindow.cpp
+        SteamDeckMainWindow.ui
+        include/displayserverbutton.h
+        src/displayserverbutton.cpp )
 set(RESOURCE_FILES "")
 
 if(APPLE)
@@ -67,9 +73,10 @@ if (CHIAKI_ENABLE_PLACEBO)
 endif()
 
 add_executable(chiaki WIN32
-		${RESOURCE_FILES}
+                ${RESOURCE_FILES}
 		${SOURCE_FILES}
 )
+
 target_include_directories(chiaki PRIVATE include)
 
 

@@ -4,7 +4,7 @@ int real_main(int argc, char *argv[]);
 int main(int argc, char *argv[]) { return real_main(argc, argv); }
 
 #include <streamwindow.h>
-#include <mainwindow.h>
+#include <SteamDeckMainWindow.h>
 #include <streamsession.h>
 #include <settings.h>
 #include <registdialog.h>
@@ -249,8 +249,10 @@ int real_main(int argc, char *argv[])
 
 int RunMain(QApplication &app, Settings *settings)
 {
-	MainWindow main_window(settings);
-	main_window.show();
+    SteamDeckMainWindow* sd= new SteamDeckMainWindow(settings);
+    sd->show();
+    // MainWindow main_window(settings);
+    // main_window.show();
 	return app.exec();
 }
 

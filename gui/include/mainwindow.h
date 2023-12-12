@@ -22,6 +22,7 @@ struct DisplayServer
 	bool registered;
 
 	QString GetHostAddr() const { return discovered ? discovery_host.host_addr : manual_host.GetHost(); }
+    HostMAC GetHostMAC() const { return discovered ? discovery_host.GetHostMAC() : manual_host.GetMAC(); }
 	bool IsPS5() const { return discovered ? discovery_host.ps5 :
 		(registered ? chiaki_target_is_ps5(registered_host.GetTarget()) : false); }
 };
