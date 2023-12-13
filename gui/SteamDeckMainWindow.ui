@@ -31,6 +31,15 @@
 background-color:#272D28;
 }
 
+QScrollArea#scrollArea
+{
+background-color:#272D28;
+}
+
+QWidget#scrollAreaWidgetContents
+{
+background-color:#272D28;
+}
 QLabel#title
 {
 color:white;
