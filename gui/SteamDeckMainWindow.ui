@@ -29,6 +29,11 @@
    <string notr="true">QMainWindow
 {
 background-color:#272D28;
+}
+
+QLabel#title
+{
+color:white;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
