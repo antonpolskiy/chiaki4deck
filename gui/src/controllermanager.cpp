@@ -7,6 +7,9 @@
 #include <QMessageBox>
 #include <QByteArray>
 #include <QTimer>
+#include "controllerevent.h"
+#include <QApplication>
+#include <QWindow>
 
 #ifdef CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER
 #include <SDL.h>
@@ -406,6 +409,9 @@ inline bool Controller::HandleButtonEvent(SDL_ControllerButtonEvent event) {
 		else
 			state.buttons &= ~ps_btn;
 	}
+
+    QCoreApplication::postEvent(QApplication::focusWindow(),
+                                new ControllerEvent(ps_btn, event.type == SDL_CONTROLLERBUTTONDOWN ));
 	return true;
 }
 

@@ -56,7 +56,9 @@ set(SOURCE_FILES
         SteamDeckMainWindow.cpp
         SteamDeckMainWindow.ui
         include/displayserverbutton.h
-        src/displayserverbutton.cpp )
+        src/displayserverbutton.cpp
+        include/controllerevent.h
+        src/controllerevent.cpp)
 set(RESOURCE_FILES "")
 
 if(APPLE)
@@ -74,7 +76,7 @@ endif()
 
 add_executable(chiaki WIN32
                 ${RESOURCE_FILES}
-		${SOURCE_FILES}
+                ${SOURCE_FILES}
 )
 
 target_include_directories(chiaki PRIVATE include)

@@ -11,6 +11,7 @@
 #include "host.h"
 
 #include "mainwindow.h"
+#include "controllermanager.h"
 
 // struct DisplayServer
 // {
@@ -40,7 +41,7 @@ public:
 protected:
     virtual void keyReleaseEvent(QKeyEvent *event) override;
     virtual void keyPressEvent(QKeyEvent *event) override;
-
+    virtual bool event(QEvent *event) override;
 
     virtual bool eventFilter(QObject *pWatched, QEvent *pEvent) override;
 
@@ -49,6 +50,7 @@ private:
     bool m_show_registered;
     //legacy
     Settings *m_settings;
+    QHash<int, Controller *> m_controllers;
 
     DiscoveryManager discovery_manager;
 
@@ -93,6 +95,8 @@ private slots:
 
     void UpdateDisplayServers();
     void UpdateServerWidgets(QMap<HostMAC, DisplayServer> servers);
+
+    void UpdateGamepads();
 };
 
 #endif // STEAMDECKMAINWINDOW_H

@@ -95,6 +95,9 @@ background-color:#272D28;
          <height>565</height>
         </rect>
        </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
        <layout class="QHBoxLayout" name="horizontalLayout"/>
       </widget>
      </widget>

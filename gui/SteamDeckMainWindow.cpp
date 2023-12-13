@@ -13,6 +13,7 @@
 #include <QCursor>
 #include <QApplication>
 #include <settings.h>
+#include <controllerevent.h>
 
 #define SETTINGS_BTN INT_MAX
 #define ADD_CONSOLE_BTN SETTINGS_BTN-1
@@ -48,6 +49,8 @@ SteamDeckMainWindow::SteamDeckMainWindow(Settings *settings, QWidget *parent) :
     discovery_manager.SetActive(true);
     UpdateDisplayServers();
     UpdateDiscoveryEnabled();
+    connect(ControllerManager::GetInstance(), SIGNAL(AvailableControllersUpdated(void)), this, SLOT(UpdateGamepads(void)) );
+    UpdateGamepads();
 }
 
 bool SteamDeckMainWindow::eventFilter(QObject *pWatched, QEvent *pEvent)
@@ -208,8 +211,35 @@ void SteamDeckMainWindow::keyPressEvent(QKeyEvent *event) {
     case Qt::Key_Right : key = "Right"; selectNext(false); break;
     case Qt::Key_Return : key = "Enter"; onButtonTrigered();  break;
     case Qt::Key_Escape : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); break;
+    case Qt::Key_J : QCoreApplication::postEvent (QApplication::focusWidget(), new QKeyEvent(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier ));
     }
     std::cout << "key: " << key << std::endl;
+}
+
+bool SteamDeckMainWindow::event(QEvent *event)
+{
+    if( event->type() != ControllerEvent::type )
+        return QMainWindow::event(event);
+
+    std::cout << __func__ << " " << std::endl;
+    ControllerEvent* cevent = dynamic_cast<ControllerEvent*>(event);
+    std::string key;
+
+    if( cevent->pressed )
+    {
+        switch( cevent->btn )
+        {
+        case CHIAKI_CONTROLLER_BUTTON_DPAD_UP : key = "Up"; m_button_group.button(last_checked_id)->setChecked(true); break;
+        case CHIAKI_CONTROLLER_BUTTON_DPAD_DOWN : key = "Down"; m_button_group.button(SETTINGS_BTN)->setChecked(true); break;
+        case CHIAKI_CONTROLLER_BUTTON_DPAD_LEFT : key = "Left"; selectNext(true); break;
+        case CHIAKI_CONTROLLER_BUTTON_DPAD_RIGHT : key = "Right"; selectNext(false); break;
+        case CHIAKI_CONTROLLER_BUTTON_CROSS : key = "Enter"; onButtonTrigered();  break;
+        case CHIAKI_CONTROLLER_BUTTON_MOON : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); break;
+        }
+    }
+    std::cout << "key: " << key << std::endl;
+
+    return true;
 }
 
 void SteamDeckMainWindow::onButtonToggled(int id, bool checked)
@@ -429,4 +459,34 @@ void SteamDeckMainWindow::UpdateServerWidgets(QMap<HostMAC,DisplayServer> server
         addButton(pb,it.key(),id);
         std::cout << "addButton" <<std::endl;
     }
+}
+
+void SteamDeckMainWindow::UpdateGamepads()
+{
+#if CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER
+    for(auto controller_id : m_controllers.keys())
+    {
+        auto controller = m_controllers[controller_id];
+        if(!controller->IsConnected())
+        {
+            m_controllers.remove(controller_id);
+            delete controller;
+        }
+    }
+
+    const auto available_controllers = ControllerManager::GetInstance()->GetAvailableControllers();
+    for(auto controller_id : available_controllers)
+    {
+        if(!m_controllers.contains(controller_id))
+        {
+            auto controller = ControllerManager::GetInstance()->OpenController(controller_id);
+            if(!controller)
+            {
+                continue;
+            }
+            m_controllers[controller_id] = controller;
+
+        }
+    }
+#endif
 }
