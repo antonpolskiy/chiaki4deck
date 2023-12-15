@@ -1,5 +1,5 @@
 #include "SteamDeckMainWindow.h"
-#include "qmessagebox.h"
+#include "gamepadmessagebox.h"
 #include "registdialog.h"
 #include "settingsdialog.h"
 #include "streamsession.h"
@@ -42,7 +42,6 @@ SteamDeckMainWindow::SteamDeckMainWindow(Settings *settings, QWidget *parent) :
 
     addButton(pb,HostMAC(), ADD_CONSOLE_BTN);
 
-    grabKeyboard();
 
     m_timer.setSingleShot(true);
     m_timer.start(1);
@@ -50,7 +49,8 @@ SteamDeckMainWindow::SteamDeckMainWindow(Settings *settings, QWidget *parent) :
     UpdateDisplayServers();
     UpdateDiscoveryEnabled();
     connect(ControllerManager::GetInstance(), SIGNAL(AvailableControllersUpdated(void)), this, SLOT(UpdateGamepads(void)) );
-    UpdateGamepads();
+
+    grabControls();
 }
 
 bool SteamDeckMainWindow::eventFilter(QObject *pWatched, QEvent *pEvent)
@@ -67,7 +67,19 @@ bool SteamDeckMainWindow::eventFilter(QObject *pWatched, QEvent *pEvent)
 
 void SteamDeckMainWindow::SendWakeup(const DisplayServer *server)
 {
+    if(!server->registered)
+        return;
 
+    try
+    {
+        discovery_manager.SendWakeup(server->GetHostAddr(), server->registered_host.GetRPRegistKey(),
+                                     chiaki_target_is_ps5(server->registered_host.GetTarget()));
+    }
+    catch(const Exception &e)
+    {
+        GamepadMessageBox::critical(this, tr("Wakeup failed"), tr("Failed to send Wakeup packet:\n%1").arg(e.what()));
+        return;
+    }
 }
 
 void SteamDeckMainWindow::showRegisteredServers( bool show_registered )
@@ -82,6 +94,25 @@ void SteamDeckMainWindow::showRegisteredServers( bool show_registered )
     ui->title->setText(m_show_registered?"Select console":"Add console");
     dynamic_cast<DisplayServerButton*>(m_button_group.button(ADD_CONSOLE_BTN))->setName(m_show_registered?"Add console":"Add manually");
     UpdateDisplayServers();
+}
+
+void SteamDeckMainWindow::grabControls()
+{
+    grabKeyboard();
+    UpdateGamepads();
+}
+
+void SteamDeckMainWindow::releaseControls(bool release_gamepad)
+{
+    releaseKeyboard();
+    if(!release_gamepad) return;
+    auto it = m_controllers.begin();
+    while( it != m_controllers.end() )
+    {
+        delete *it;
+        it = m_controllers.erase(it);
+    }
+
 }
 
 void SteamDeckMainWindow::addButton( DisplayServerButton* button, const HostMAC& host, int id  )
@@ -223,11 +254,14 @@ bool SteamDeckMainWindow::event(QEvent *event)
 
     std::cout << __func__ << " " << std::endl;
     ControllerEvent* cevent = dynamic_cast<ControllerEvent*>(event);
+    if(cevent->eventType() != ControllerEvent::Event_Button)
+        return true;
+    ControllerButtonEvent* cbevent = dynamic_cast<ControllerButtonEvent*>(event);
     std::string key;
 
-    if( cevent->pressed )
+    if( cbevent->pressed() )
     {
-        switch( cevent->btn )
+        switch( cbevent->button() )
         {
         case CHIAKI_CONTROLLER_BUTTON_DPAD_UP : key = "Up"; m_button_group.button(last_checked_id)->setChecked(true); break;
         case CHIAKI_CONTROLLER_BUTTON_DPAD_DOWN : key = "Down"; m_button_group.button(SETTINGS_BTN)->setChecked(true); break;
@@ -261,19 +295,21 @@ void SteamDeckMainWindow::onButtonTrigered()
         }
         else
         {
-            releaseKeyboard();
+            releaseControls();
+
             RegistDialog regist_dialog(m_settings, QString(), this);// subnet as parameter
             regist_dialog.exec();
-            grabKeyboard();
+
+            grabControls();
         }
         return;
     }
     if( id == SETTINGS_BTN )
     {
-        releaseKeyboard();
+        releaseControls();
         SettingsDialog dialog(m_settings, this);
         dialog.exec();
-        grabKeyboard();
+        grabControls();
         return;
     }
     DisplayServer* s = DisplayServerFromId(id);
@@ -301,21 +337,33 @@ void SteamDeckMainWindow::ServerItemWidgetTriggered(DisplayServer* server)
             }
             else
             {
-                int r = QMessageBox::question(this,
+                releaseControls();
+                int r = GamepadMessageBox::question(this,
                                               tr("Start Stream"),
                                               tr("The Console is currently in standby mode.\nShould we send a Wakeup packet instead of trying to connect immediately?"),
                                               QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-                if(r == QMessageBox::Yes)
+                if(r == QMessageBox::Cancel)
                 {
-                    SendWakeup(server);
+                    grabControls();
                     return;
                 }
-                else if(r == QMessageBox::Cancel)
-                    return;
+                else if (r == QMessageBox::Yes)
+                {
+                    SendWakeup(server);
+                    time_t start, end;
+                    time(&start);
+                    do
+                        time(&end);
+                    while(difftime(end, start) <= 10);
+                }
             }
         }
 
+
+
         QString host = server->GetHostAddr();
+
+        releaseControls(true);
         StreamSessionConnectInfo info(
             m_settings,
             server->registered_host.GetTarget(),
@@ -326,15 +374,17 @@ void SteamDeckMainWindow::ServerItemWidgetTriggered(DisplayServer* server)
             false,
             false,
             false);
-        new StreamWindow(info);
+        StreamWindow* wnd = new StreamWindow(info);
+        connect( wnd, SIGNAL(WindowClosed()), this, SLOT(OnStreamWindowClosed()) );
+        hide();
     }
     else
     {
-        releaseKeyboard();
+        releaseControls();
         RegistDialog regist_dialog(m_settings, server->GetHostAddr(), this);
         int r = regist_dialog.exec();
         showRegisteredServers(true);
-        grabKeyboard();
+        grabControls();
     }
 }
 
@@ -489,4 +539,11 @@ void SteamDeckMainWindow::UpdateGamepads()
         }
     }
 #endif
+}
+
+void SteamDeckMainWindow::OnStreamWindowClosed()
+{
+    std::cout << __func__ <<std::endl;
+    this->show();
+    grabControls();
 }

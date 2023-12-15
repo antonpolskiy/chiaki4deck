@@ -411,34 +411,45 @@ inline bool Controller::HandleButtonEvent(SDL_ControllerButtonEvent event) {
 	}
 
     QCoreApplication::postEvent(QApplication::focusWindow(),
-                                new ControllerEvent(ps_btn, event.type == SDL_CONTROLLERBUTTONDOWN ));
+                                new ControllerButtonEvent(ps_btn, event.type == SDL_CONTROLLERBUTTONDOWN ));
 	return true;
 }
 
 inline bool Controller::HandleAxisEvent(SDL_ControllerAxisEvent event) {
+    ControllerAxisEvent::ControllerAxis axis;
+    int16_t val;
 	switch(event.axis)
 	{
 		case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-			state.l2_state = (uint8_t)(event.value >> 7);
+            axis =ControllerAxisEvent::Axis_LeftTrigger;
+            val = state.l2_state = (uint8_t)(event.value >> 7);
 			break;
 		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-			state.r2_state = (uint8_t)(event.value >> 7);
+            axis =ControllerAxisEvent::Axis_RightTrigger;
+            val = state.r2_state = (uint8_t)(event.value >> 7);
 			break;
 		case SDL_CONTROLLER_AXIS_LEFTX:
-			state.left_x = event.value;
+            axis =ControllerAxisEvent::Axis_LeftX;
+            val = state.left_x = event.value;
 			break;
 		case SDL_CONTROLLER_AXIS_LEFTY:
-			state.left_y = event.value;
+            axis =ControllerAxisEvent::Axis_LeftY;
+            val = state.left_y = event.value;
 			break;
 		case SDL_CONTROLLER_AXIS_RIGHTX:
-			state.right_x = event.value;
+            axis =ControllerAxisEvent::Axis_RightX;
+            val = state.right_x = event.value;
 			break;
 		case SDL_CONTROLLER_AXIS_RIGHTY:
-			state.right_y = event.value;
+            axis =ControllerAxisEvent::Axis_RightY;
+            val = state.right_y = event.value;
 			break;
 		default:
 			return false;
 	}
+
+    QCoreApplication::postEvent(QApplication::focusWindow(),
+                                new ControllerAxisEvent(axis, event.value ));
 	return true;
 }
 

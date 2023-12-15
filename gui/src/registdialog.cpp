@@ -10,9 +10,10 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QScrollBar>
-#include <QMessageBox>
+#include "gamepadmessagebox.h"
 #include <QCheckBox>
 #include <QRadioButton>
+#include <QApplication>
 
 Q_DECLARE_METATYPE(ChiakiLogLevel)
 
@@ -26,6 +27,7 @@ RegistDialog::RegistDialog(Settings *settings, const QString &host, QWidget *par
 {
 	setWindowTitle(tr("Register Console"));
 
+    QApplication::inputMethod()->show();
 	auto layout = new QVBoxLayout(this);
 	setLayout(layout);
 
@@ -136,7 +138,7 @@ void RegistDialog::accept()
 		QByteArray account_id = QByteArray::fromBase64(account_id_b64.toUtf8());
 		if(account_id.size() != CHIAKI_PSN_ACCOUNT_ID_SIZE)
 		{
-			QMessageBox::critical(this, tr("Invalid Account-ID"), tr("The PSN Account-ID must be exactly %1 bytes encoded as base64.").arg(CHIAKI_PSN_ACCOUNT_ID_SIZE));
+            GamepadMessageBox::critical(this, tr("Invalid Account-ID"), tr("The PSN Account-ID must be exactly %1 bytes encoded as base64.").arg(CHIAKI_PSN_ACCOUNT_ID_SIZE));
 			return;
 		}
 		info.psn_online_id = nullptr;
@@ -222,7 +224,7 @@ void RegistExecuteDialog::Success(RegisteredHost host)
 
 	settings->AddRegisteredHost(host);
 
-	QMessageBox::information(this, tr("Console registered"), tr("The Console %1 with ID %2 has been successfully registered!").arg(host.GetServerNickname(), host.GetServerMAC().ToString()));
+    GamepadMessageBox::information(this, tr("Console registered"), tr("The Console %1 with ID %2 has been successfully registered!").arg(host.GetServerNickname(), host.GetServerMAC().ToString()));
 
 	accept();
 }

@@ -1,19 +1,23 @@
 <RCC>
-  <qresource prefix="/icons">
-    <file>settings-20px.svg</file>
-    <file>add-24px.svg</file>
-    <file>discover-24px.svg</file>
-    <file>discover-off-24px.svg</file>
-    <file>chiaki4deck.svg</file>
-    <file>chiaki.svg</file>
-    <file>chiaki_macos.svg</file>
-    <file>console-ps4.svg</file>
-    <file>console-ps5.svg</file>
-    <file>focused_btn_bg.png</file>
-    <file>PS4.svg</file>
-    <file>PS5.svg</file>
-    <file>focused_settings_btn.png</file>
-    <file>Gear.png</file>
-    <file>AddConsole.svg</file>
-  </qresource>
+    <qresource prefix="/icons">
+        <file>settings-20px.svg</file>
+        <file>add-24px.svg</file>
+        <file>discover-24px.svg</file>
+        <file>discover-off-24px.svg</file>
+        <file>chiaki4deck.svg</file>
+        <file>chiaki.svg</file>
+        <file>chiaki_macos.svg</file>
+        <file>console-ps4.svg</file>
+        <file>console-ps5.svg</file>
+        <file>focused_btn_bg.png</file>
+        <file>PS4.svg</file>
+        <file>PS5.svg</file>
+        <file>focused_settings_btn.png</file>
+        <file>Gear.png</file>
+        <file>AddConsole.svg</file>
+        <file>login_entry_empty.svg</file>
+        <file>login_entry_filled.svg</file>
+        <file>button_map.svg</file>
+        <file>button_map.png</file>
+    </qresource>
 </RCC>

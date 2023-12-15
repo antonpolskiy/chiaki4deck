@@ -235,6 +235,8 @@ void StreamWindow::closeEvent(QCloseEvent *event)
 	}
 	if (av_widget)
 		av_widget->Stop();
+
+    emit WindowClosed();
 }
 
 void StreamWindow::SessionQuit(ChiakiQuitReason reason, const QString &reason_str)

@@ -33,12 +33,12 @@ background-color:#272D28;
 
 QScrollArea#scrollArea
 {
-background-color:#272D28;
+background:none;
 }
 
 QWidget#scrollAreaWidgetContents
 {
-background-color:#272D28;
+background-color:none;
 }
 QLabel#title
 {
@@ -110,7 +110,7 @@ color:white;
         </rect>
        </property>
        <property name="autoFillBackground">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout"/>
       </widget>

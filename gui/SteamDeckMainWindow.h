@@ -84,6 +84,9 @@ private:
     void updateDisplayServer( const DiscoveryHost& discovery );
 
     void showRegisteredServers(bool show_registered);
+
+    void grabControls();
+    void releaseControls(bool release_gamepad = false);
 private slots:
     void onButtonToggled( int id, bool checked );
     void onButtonTrigered();
@@ -97,6 +100,8 @@ private slots:
     void UpdateServerWidgets(QMap<HostMAC, DisplayServer> servers);
 
     void UpdateGamepads();
+
+    void OnStreamWindowClosed();
 };
 
 #endif // STEAMDECKMAINWINDOW_H

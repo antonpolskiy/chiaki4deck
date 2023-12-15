@@ -58,7 +58,9 @@ set(SOURCE_FILES
         include/displayserverbutton.h
         src/displayserverbutton.cpp
         include/controllerevent.h
-        src/controllerevent.cpp)
+        src/controllerevent.cpp
+        include/gamepadmessagebox.h
+        src/gamepadmessagebox.cpp)
 set(RESOURCE_FILES "")
 
 if(APPLE)
