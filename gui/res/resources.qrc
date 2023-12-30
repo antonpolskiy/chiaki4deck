@@ -19,5 +19,13 @@
         <file>login_entry_filled.svg</file>
         <file>button_map.svg</file>
         <file>button_map.png</file>
+        <file>question.svg</file>
+        <file>warning.svg</file>
+        <file>information.svg</file>
+        <file>critical.svg</file>
+        <file>state_manual.svg</file>
+        <file>state_ready.svg</file>
+        <file>state_standby.svg</file>
+        <file>state_unavailable.svg</file>
     </qresource>
 </RCC>

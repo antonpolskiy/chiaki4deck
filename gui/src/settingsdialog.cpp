@@ -12,7 +12,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QGroupBox>
-#include <QMessageBox>
+#include "gamepadmessagebox.h"
 #include <QComboBox>
 #include <QFormLayout>
 #include <QScrollArea>
@@ -240,7 +240,7 @@ SettingsDialog::SettingsDialog(Settings *settings, QWidget *parent) : QDialog(pa
 	auto about_button = new QPushButton(tr("About chiaki4deck"), this);
 	general_layout->addRow(about_button);
 	connect(about_button, &QPushButton::clicked, this, [this]() {
-		QMessageBox::about(this, tr("About chiaki4deck"), about_string);
+        GamepadMessageBox::information(this, tr("About chiaki4deck"), about_string); //TODO: make propper about. QTextDocument to render rich text
 	});
 
 	// Stream Settings
@@ -630,7 +630,7 @@ void SettingsDialog::DeleteRegisteredHost()
 		return;
 	auto mac = item->data(Qt::UserRole).value<HostMAC>();
 
-	int r = QMessageBox::question(this, tr("Delete registered Console"),
+    int r = GamepadMessageBox::question(this, tr("Delete registered Console"),
 			tr("Are you sure you want to delete the registered console with ID %1?").arg(mac.ToString()));
 	if(r != QMessageBox::Yes)
 		return;

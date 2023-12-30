@@ -23,6 +23,7 @@ SteamDeckMainWindow::SteamDeckMainWindow(Settings *settings, QWidget *parent) :
     ui(new Ui::SteamDeckMainWindow),
     m_show_registered(true),
     last_checked_id(-1),
+    m_splash_wait(nullptr),
     m_settings(settings)
 {
     ui->setupUi(this);
@@ -48,7 +49,7 @@ SteamDeckMainWindow::SteamDeckMainWindow(Settings *settings, QWidget *parent) :
     discovery_manager.SetActive(true);
     UpdateDisplayServers();
     UpdateDiscoveryEnabled();
-    connect(ControllerManager::GetInstance(), SIGNAL(AvailableControllersUpdated(void)), this, SLOT(UpdateGamepads(void)) );
+    connect(ControllerManager::GetInstance(), SIGNAL(AvailableControllersUpdated()), this, SLOT(UpdateGamepads()) );
 
     grabControls();
 }
@@ -65,7 +66,7 @@ bool SteamDeckMainWindow::eventFilter(QObject *pWatched, QEvent *pEvent)
     return QObject::eventFilter(pWatched, pEvent);
 }
 
-void SteamDeckMainWindow::SendWakeup(const DisplayServer *server)
+void SteamDeckMainWindow::SendWakeup(const DisplayServer *server, bool wait)
 {
     if(!server->registered)
         return;
@@ -74,12 +75,53 @@ void SteamDeckMainWindow::SendWakeup(const DisplayServer *server)
     {
         discovery_manager.SendWakeup(server->GetHostAddr(), server->registered_host.GetRPRegistKey(),
                                      chiaki_target_is_ps5(server->registered_host.GetTarget()));
+
+        m_wait_for_server = server->GetHostMAC();
+
+        m_splash_wait = GamepadMessageBox::splash(this, "Please wait...", QString("Waking up %1").arg(server->discovery_host.host_name), 15);
+        connect(m_splash_wait, SIGNAL(finished(int)), this, SLOT(wakeUpTimeOut()));
     }
     catch(const Exception &e)
     {
         GamepadMessageBox::critical(this, tr("Wakeup failed"), tr("Failed to send Wakeup packet:\n%1").arg(e.what()));
         return;
     }
+}
+
+void SteamDeckMainWindow::wakeUpTimeOut()
+{
+    m_wait_for_server = HostMAC();
+    m_splash_wait = nullptr;
+    GamepadMessageBox::warning(this, "Timeout waking console", "Wait some time or try again", QMessageBox::Ok);
+}
+
+void SteamDeckMainWindow::connectToServer( DisplayServer* server )
+{
+    if( m_splash_wait )
+        disconnect(m_splash_wait, nullptr, nullptr, nullptr);
+    releaseControls(true);
+    StreamSessionConnectInfo info(
+        m_settings,
+        server->registered_host.GetTarget(),
+        server->GetHostAddr(),
+        server->registered_host.GetRPRegistKey(),
+        server->registered_host.GetRPKey(),
+        QString(""),
+        false,
+        false,
+        false);
+    StreamWindow* wnd = new StreamWindow(info);
+
+    if( m_splash_wait )
+    {
+        m_splash_wait->close();
+        m_splash_wait = nullptr;
+        m_wait_for_server = HostMAC();
+    }
+
+    connect( wnd, SIGNAL(WindowClosed()), this, SLOT(OnStreamWindowClosed()) ); // not if gamescope
+    connect( wnd, SIGNAL(destroyed(QObject*)), this, SLOT(OnStreamWindowDestroyed()) ); // not if gamescope
+    hide();
 }
 
 void SteamDeckMainWindow::showRegisteredServers( bool show_registered )
@@ -98,13 +140,12 @@ void SteamDeckMainWindow::showRegisteredServers( bool show_registered )
 
 void SteamDeckMainWindow::grabControls()
 {
-    grabKeyboard();
+    //grabKeyboard();
     UpdateGamepads();
 }
 
 void SteamDeckMainWindow::releaseControls(bool release_gamepad)
 {
-    releaseKeyboard();
     if(!release_gamepad) return;
     auto it = m_controllers.begin();
     while( it != m_controllers.end() )
@@ -113,6 +154,16 @@ void SteamDeckMainWindow::releaseControls(bool release_gamepad)
         it = m_controllers.erase(it);
     }
 
+}
+
+void SteamDeckMainWindow::Exit()
+{
+    int r = GamepadMessageBox::question(this,
+                                        tr("Exit"),
+                                        tr("Are you sure you want to exit?"),
+                                        QMessageBox::Yes | QMessageBox::Cancel);
+    if( r == QMessageBox::Yes )
+        this->close();
 }
 
 void SteamDeckMainWindow::addButton( DisplayServerButton* button, const HostMAC& host, int id  )
@@ -228,12 +279,18 @@ void SteamDeckMainWindow::controlCursor(bool show)
 
 SteamDeckMainWindow::~SteamDeckMainWindow()
 {
+    disconnect(ControllerManager::GetInstance(), SIGNAL(AvailableControllersUpdated(void)), this, SLOT(UpdateGamepads(void)) );
+    for( auto controller: m_controllers )
+    {
+        delete controller;
+    }
     delete ui;
 }
 
 void SteamDeckMainWindow::keyPressEvent(QKeyEvent *event) {
     std::string key;
 
+    bool accepted = true;
     switch( event->key() )
     {
     case Qt::Key_Up : key = "Up"; m_button_group.button(last_checked_id)->setChecked(true); break;
@@ -241,9 +298,11 @@ void SteamDeckMainWindow::keyPressEvent(QKeyEvent *event) {
     case Qt::Key_Left : key = "Left"; selectNext(true); break;
     case Qt::Key_Right : key = "Right"; selectNext(false); break;
     case Qt::Key_Return : key = "Enter"; onButtonTrigered();  break;
-    case Qt::Key_Escape : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); break;
-    case Qt::Key_J : QCoreApplication::postEvent (QApplication::focusWidget(), new QKeyEvent(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier ));
+    case Qt::Key_Escape : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); else Exit(); break;
+    default : accepted = false;
     }
+    event->setAccepted(accepted);
+    QMainWindow::keyPressEvent(event);
     std::cout << "key: " << key << std::endl;
 }
 
@@ -268,7 +327,7 @@ bool SteamDeckMainWindow::event(QEvent *event)
         case CHIAKI_CONTROLLER_BUTTON_DPAD_LEFT : key = "Left"; selectNext(true); break;
         case CHIAKI_CONTROLLER_BUTTON_DPAD_RIGHT : key = "Right"; selectNext(false); break;
         case CHIAKI_CONTROLLER_BUTTON_CROSS : key = "Enter"; onButtonTrigered();  break;
-        case CHIAKI_CONTROLLER_BUTTON_MOON : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); break;
+        case CHIAKI_CONTROLLER_BUTTON_MOON : key = "Back"; if( !m_show_registered ) showRegisteredServers(true); else Exit(); break;
         }
     }
     std::cout << "key: " << key << std::endl;
@@ -295,21 +354,15 @@ void SteamDeckMainWindow::onButtonTrigered()
         }
         else
         {
-            releaseControls();
-
             RegistDialog regist_dialog(m_settings, QString(), this);// subnet as parameter
             regist_dialog.exec();
-
-            grabControls();
         }
         return;
     }
     if( id == SETTINGS_BTN )
     {
-        releaseControls();
         SettingsDialog dialog(m_settings, this);
         dialog.exec();
-        grabControls();
         return;
     }
     DisplayServer* s = DisplayServerFromId(id);
@@ -328,33 +381,23 @@ void SteamDeckMainWindow::ServerItemWidgetTriggered(DisplayServer* server)
         {
             if(m_settings->GetAutomaticConnect())
             {
-                SendWakeup(server);
-                time_t start, end;
-                time(&start);
-                do
-                    time(&end);
-                while(difftime(end, start) <= 10);
+                SendWakeup(server, true);
+                return;
             }
             else
             {
-                releaseControls();
                 int r = GamepadMessageBox::question(this,
                                               tr("Start Stream"),
                                               tr("The Console is currently in standby mode.\nShould we send a Wakeup packet instead of trying to connect immediately?"),
                                               QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
                 if(r == QMessageBox::Cancel)
                 {
-                    grabControls();
                     return;
                 }
                 else if (r == QMessageBox::Yes)
                 {
-                    SendWakeup(server);
-                    time_t start, end;
-                    time(&start);
-                    do
-                        time(&end);
-                    while(difftime(end, start) <= 10);
+                    SendWakeup(server, true);
+                    return;
                 }
             }
         }
@@ -363,28 +406,13 @@ void SteamDeckMainWindow::ServerItemWidgetTriggered(DisplayServer* server)
 
         QString host = server->GetHostAddr();
 
-        releaseControls(true);
-        StreamSessionConnectInfo info(
-            m_settings,
-            server->registered_host.GetTarget(),
-            host,
-            server->registered_host.GetRPRegistKey(),
-            server->registered_host.GetRPKey(),
-            QString(""),
-            false,
-            false,
-            false);
-        StreamWindow* wnd = new StreamWindow(info);
-        connect( wnd, SIGNAL(WindowClosed()), this, SLOT(OnStreamWindowClosed()) );
-        hide();
+        connectToServer(server);
     }
     else
     {
-        releaseControls();
         RegistDialog regist_dialog(m_settings, server->GetHostAddr(), this);
         int r = regist_dialog.exec();
         showRegisteredServers(true);
-        grabControls();
     }
 }
 
@@ -430,6 +458,10 @@ void SteamDeckMainWindow::updateDisplayServer( const DiscoveryHost& discovery )
     auto& server = display_servers[discovery.GetHostMAC()];
     server.discovered = true;
     server.discovery_host = discovery;
+    if( discovery.GetHostMAC() == m_wait_for_server )
+    {
+        connectToServer(&server);
+    }
 };
 
 void SteamDeckMainWindow::UpdateDisplayServers()
@@ -453,7 +485,9 @@ void SteamDeckMainWindow::UpdateDisplayServers()
     for(const auto &host : discovery_manager.GetHosts())
     {
         if( display_servers.contains(host.GetHostMAC()) )
+        {
             updateDisplayServer(host);
+        }
         else if( !m_show_registered )
         {
 
@@ -478,6 +512,25 @@ DisplayServer *SteamDeckMainWindow::DisplayServerFromId( int id )
     return nullptr;
 }
 
+DisplayServerButton::EState SteamDeckMainWindow::GetServerState(DisplayServer& display_server)
+{
+    if(display_server.manual_host.GetID() != -1 )
+    {
+        return DisplayServerButton::State_Manual;
+    }
+
+    if( display_server.registered && !display_server.discovered)
+        return DisplayServerButton::State_Unavailable;
+
+    switch( display_server.discovery_host.state )
+    {
+    case CHIAKI_DISCOVERY_HOST_STATE_READY: return DisplayServerButton::State_Ready;
+    case CHIAKI_DISCOVERY_HOST_STATE_STANDBY: return DisplayServerButton::State_Standby;
+    case CHIAKI_DISCOVERY_HOST_STATE_UNKNOWN: return DisplayServerButton::State_Unavailable;
+    }
+    assert(0);
+}
+
 void SteamDeckMainWindow::UpdateServerWidgets(QMap<HostMAC,DisplayServer> servers)
 {
     for( auto it = m_server_map.begin(); it != m_server_map.end();)
@@ -492,7 +545,9 @@ void SteamDeckMainWindow::UpdateServerWidgets(QMap<HostMAC,DisplayServer> server
 
         DisplayServerButton* pb = dynamic_cast<DisplayServerButton*>(m_button_group.button(it.key()));
         pb->setName(display_server->discovered ?
-                        display_server->discovery_host.host_name : display_server->GetHostAddr());
+                        display_server->discovery_host.host_name :  display_server->registered ?
+                            display_server->registered_host.GetServerNickname() : display_server->GetHostAddr());
+        pb->setState(GetServerState(display_server.value()));
 
         std::cout << "updateButton" <<std::endl;
         servers.erase(display_server);
@@ -505,6 +560,7 @@ void SteamDeckMainWindow::UpdateServerWidgets(QMap<HostMAC,DisplayServer> server
                        ( it->discovered ? it->discovery_host.host_name : it->GetHostAddr() );
         DisplayServerButton* pb = new DisplayServerButton(name, it->IsPS5() ?
                                                               ":/icons/PS5.svg" : ":/icons/PS4.svg" );
+        pb->setState(GetServerState(it.value()));
         int id = nextId();
         addButton(pb,it.key(),id);
         std::cout << "addButton" <<std::endl;
@@ -527,11 +583,13 @@ void SteamDeckMainWindow::UpdateGamepads()
     const auto available_controllers = ControllerManager::GetInstance()->GetAvailableControllers();
     for(auto controller_id : available_controllers)
     {
+        std::cout << "controller: " << controller_id << std::endl;
         if(!m_controllers.contains(controller_id))
         {
             auto controller = ControllerManager::GetInstance()->OpenController(controller_id);
             if(!controller)
             {
+                std::cout << "not available" << std::endl;
                 continue;
             }
             m_controllers[controller_id] = controller;
@@ -545,5 +603,10 @@ void SteamDeckMainWindow::OnStreamWindowClosed()
 {
     std::cout << __func__ <<std::endl;
     this->show();
+}
+
+void SteamDeckMainWindow::OnStreamWindowDestroyed()
+{
+    std::cout << __func__ <<std::endl;
     grabControls();
 }

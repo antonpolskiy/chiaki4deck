@@ -217,7 +217,7 @@ void MainWindow::SendWakeup(const DisplayServer *server)
 	}
 	catch(const Exception &e)
 	{
-		QMessageBox::critical(this, tr("Wakeup failed"), tr("Failed to send Wakeup packet:\n%1").arg(e.what()));
+        QMessageBox::critical(this, tr("Wakeup failed"), tr("Failed to send Wakeup packet:\n%1").arg(e.what()));
 		return;
 	}
 }
@@ -244,7 +244,7 @@ void MainWindow::ServerItemWidgetTriggered()
 			}
 			else
 			{
-				int r = QMessageBox::question(this,
+                int r = QMessageBox::question(this,
 						tr("Start Stream"),
 						tr("The Console is currently in standby mode.\nShould we send a Wakeup packet instead of trying to connect immediately?"),
 						QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);

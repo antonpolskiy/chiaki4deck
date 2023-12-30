@@ -249,8 +249,9 @@ int real_main(int argc, char *argv[])
 
 int RunMain(QApplication &app, Settings *settings)
 {
-    SteamDeckMainWindow* sd= new SteamDeckMainWindow(settings);
-    sd->show();
+    SteamDeckMainWindow sd(settings);
+    sd.show();
+
     // MainWindow main_window(settings);
     // main_window.show();
 	return app.exec();

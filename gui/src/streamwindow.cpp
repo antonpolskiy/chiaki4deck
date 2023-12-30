@@ -15,12 +15,13 @@
 #include <QAction>
 #include <QWindow>
 #include <QGuiApplication>
+#include "gamepadmessagebox.h"
 
 StreamWindow::StreamWindow(const StreamSessionConnectInfo &connect_info, QWidget *parent)
 	: QMainWindow(parent),
 	connect_info(connect_info)
 {
-	setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_DeleteOnClose);
 	setAttribute(Qt::WA_AcceptTouchEvents);
 	setWindowTitle(qApp->applicationName() + " | Stream");
 
@@ -35,15 +36,16 @@ StreamWindow::StreamWindow(const StreamSessionConnectInfo &connect_info, QWidget
 	}
 	catch(const Exception &e)
 	{
-		QMessageBox::critical(this, tr("Stream failed"), tr("Failed to initialize Stream Session: %1").arg(e.what()));
+        GamepadMessageBox::critical(this, tr("Stream failed"), tr("Failed to initialize Stream Session: %1").arg(e.what()));
 		close();
 	}
 }
 
 StreamWindow::~StreamWindow()
 {
-	// make sure av_widget is always deleted before the session
+    // make sure av_widget is always deleted before the session
 	delete av_widget;
+    delete session;
 }
 
 void StreamWindow::Init()
@@ -246,7 +248,7 @@ void StreamWindow::SessionQuit(ChiakiQuitReason reason, const QString &reason_st
 		QString m = tr("Chiaki Session has quit") + ":\n" + chiaki_quit_reason_string(reason);
 		if(!reason_str.isEmpty())
 			m += "\n" + tr("Reason") + ": \"" + reason_str + "\"";
-		QMessageBox::critical(this, tr("Session has quit"), m);
+        GamepadMessageBox::critical(this, tr("Session has quit"), m);
 	}
 	close();
 }

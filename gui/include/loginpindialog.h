@@ -17,7 +17,7 @@ class LoginPINDialog : public QDialog
 	private:
         int m_entered_count;
 		QString pin;
-        QPixmap m_button_map;
+        QIcon m_button_map;
         QIcon m_entry_empty;
         QIcon m_entry_filled;
         QVector<int16_t> m_axises;
@@ -34,6 +34,7 @@ class LoginPINDialog : public QDialog
 
     private:
         void paintEntry(QPainter& p, QRect r);
+        void paintButtonMap(QPainter &p, QRect r);
         bool enterChar(QChar c);
         bool removeChar();
 };

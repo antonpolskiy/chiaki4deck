@@ -26,6 +26,8 @@ RegistDialog::RegistDialog(Settings *settings, const QString &host, QWidget *par
 	settings(settings)
 {
 	setWindowTitle(tr("Register Console"));
+    if( parent )
+        setGeometry(parent->rect());
 
     QApplication::inputMethod()->show();
 	auto layout = new QVBoxLayout(this);

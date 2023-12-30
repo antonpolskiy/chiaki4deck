@@ -4,17 +4,27 @@
 #include "chiaki/log.h"
 #include <iostream>
 
+static const int c_state_icon_width = 56;
+static const int c_state_icon_height = 45;
+
 DisplayServerButton::DisplayServerButton(const QString &name, const QString &icon, QWidget *parent) :
-    QAbstractButton(parent), m_icon(icon), m_name(name), m_inside(false)
+    QAbstractButton(parent), m_icon(icon), m_name(name), m_inside(false), m_state(State_None)
 {
     QSize size(356,356);
     setMaximumSize(size);
     setMinimumSize(size);
     setCheckable(true);
+    setFocusPolicy(Qt::NoFocus);
 }
 
 DisplayServerButton::~DisplayServerButton()
 {
+}
+
+void DisplayServerButton::setState(EState state)
+{
+    m_state = state;
+    update();
 }
 
 void DisplayServerButton::setName(const QString &name)
@@ -51,7 +61,7 @@ void DisplayServerButton::paintActive( QPainter* painter, const QRect& rect )
     QFont font = painter->font();
     font.setPixelSize(32);
     painter->setFont(font);
-    QPen pen(palette().color(QPalette::Active, QPalette::ButtonText));
+    QPen pen(palette().color(QPalette::Active, QPalette::BrightText));
 
 
     QRect rectangle = rect;
@@ -59,6 +69,8 @@ void DisplayServerButton::paintActive( QPainter* painter, const QRect& rect )
     QRect boundingRect;
     painter->setPen(pen);
     painter->drawText(rectangle, Qt::AlignCenter, m_name, &boundingRect);
+
+    paintState(painter,rect,QIcon::Normal);
 }
 
 void DisplayServerButton::paintNormal(QPainter *painter, const QRect &rect)
@@ -78,6 +90,24 @@ void DisplayServerButton::paintNormal(QPainter *painter, const QRect &rect)
     QRect boundingRect;
     painter->setPen(pen);
     painter->drawText(rectangle, Qt::AlignCenter, m_name, &boundingRect);
+
+    paintState(painter,rect,QIcon::Disabled);
+}
+
+void DisplayServerButton::paintState(QPainter *painter, const QRect &rect, QIcon::Mode mode)
+{
+    QRect state_rect = QRect( rect.x() + (rect.width()-c_state_icon_width)/2, rect.bottom() - c_state_icon_height - 40, c_state_icon_width,c_state_icon_height);
+    QIcon icon;
+    switch(m_state)
+    {
+    case State_Manual: icon = QIcon(":/icons/state_manual.svg"); break;
+    case State_Unavailable: icon = QIcon(":/icons/state_unavailable.svg"); break;
+    case State_Standby: icon = QIcon(":/icons/state_standby.svg"); break;
+    case State_Ready: icon = QIcon(":/icons/state_ready.svg"); break;
+    default:return;
+    }
+
+    icon.paint(painter, state_rect, Qt::AlignCenter, mode);
 }
 
 void DisplayServerButton::mousePressEvent(QMouseEvent *e)
@@ -110,6 +140,7 @@ SettingsButton::SettingsButton(QWidget *parent) :
     setMaximumSize(size);
     setMinimumSize(size);
     setCheckable(true);
+    setFocusPolicy(Qt::NoFocus);
 }
 
 SettingsButton::~SettingsButton()

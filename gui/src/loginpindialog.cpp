@@ -7,18 +7,33 @@
 
 #define PIN_LENGTH 4
 
+static const int c_btn_map_width = 324;
+static const int c_btn_map_height = 248;
+static const int c_entry_width = 64;
+static const int c_entry_height = 54;
+static const int c_entry_spacing = 22;
+static const int c_y_offset = 74;
+static const int c_y_min_margin = 54;
+
 LoginPINDialog::LoginPINDialog(bool incorrect, QWidget *parent)
     : QDialog(parent)
     , m_entered_count(0)
     , pin("    ")
-    , m_button_map(":/icons/button_map.png")
+    , m_button_map(":/icons/button_map.svg")
     , m_entry_empty(":/icons/login_entry_empty.svg")
     , m_entry_filled(":/icons/login_entry_filled.svg")
 {
     setWindowTitle(tr("Console Login PIN"));
-    QSize size(636,467);
-    setMaximumSize(size);
-    setMinimumSize(size);
+    if(parent)
+    {
+        setGeometry(parent->geometry());
+    }
+    else
+    {
+        QSize size(636,467);
+        setMaximumSize(size);
+        setMinimumSize(size);
+    }
     m_axises.resize(6);
 }
 
@@ -143,20 +158,29 @@ void LoginPINDialog::paintEvent(QPaintEvent *event)
 {
     QPainter p(this);
     QRect wnd_rect = event->rect();
-    QRect entry_rect(155,40,322,52);
+
+    p.fillRect(wnd_rect, QBrush(QColor("#272D28")));
+    int height = c_y_min_margin*2 + c_entry_height + c_y_offset + c_btn_map_height;
+
+    QRect entry_rect = wnd_rect.marginsRemoved(QMargins(0,(wnd_rect.height()-height)/2 ,0,(wnd_rect.height()-height)/2 + c_y_offset + c_btn_map_height + c_y_min_margin ));
+    QRect button_map_rect = wnd_rect.marginsRemoved(QMargins((wnd_rect.width()-c_btn_map_width)/2,(wnd_rect.height()-height)/2 + c_y_offset + c_entry_height + c_y_min_margin ,(wnd_rect.width()-c_btn_map_width)/2,(wnd_rect.height()-height)/2));
 
     paintEntry(p,entry_rect);
+    paintButtonMap(p,button_map_rect);
+}
 
-    QPixmap button_map(":/icons/button_map.png");
-    QRect button_map_rect(156,170,324,248);
-    p.drawPixmap(button_map_rect, button_map);
+void LoginPINDialog::paintButtonMap(QPainter &p, QRect r)
+{
+    m_button_map.paint(&p, r );
 }
 
 void LoginPINDialog::paintEntry(QPainter &p, QRect r)
 {
+    int x = r.x() + ( r.width() - ((PIN_LENGTH * c_entry_width) + (PIN_LENGTH-1)*c_entry_spacing)) / 2;
+    int y = r.y() +  ( r.height() - c_entry_height ) / 2;
     for( int i = 0; i < PIN_LENGTH; ++i )
     {
-        QRect rect(r.x() + (i*86), r.y(), 64, 52);
+        QRect rect(x + (i*(c_entry_spacing+c_entry_width)), y, c_entry_width, c_entry_height);
 
         if( i < m_entered_count )
             m_entry_filled.paint(&p, rect, Qt::AlignCenter, QIcon::Normal);

@@ -8,6 +8,7 @@
 #include <displayserverbutton.h>
 
 #include "discoverymanager.h"
+#include "gamepadmessagebox.h"
 #include "host.h"
 
 #include "mainwindow.h"
@@ -38,6 +39,7 @@ class SteamDeckMainWindow : public QMainWindow
 public:
     explicit SteamDeckMainWindow(Settings* settings, QWidget *parent = nullptr);
     ~SteamDeckMainWindow();
+
 protected:
     virtual void keyReleaseEvent(QKeyEvent *event) override;
     virtual void keyPressEvent(QKeyEvent *event) override;
@@ -57,7 +59,7 @@ private:
     QMap<HostMAC,DisplayServer> display_servers;
 
     DisplayServer *DisplayServerFromId(int id);
-    void SendWakeup(const DisplayServer *server);
+    void SendWakeup(const DisplayServer *server, bool wait);
     //legacy
 
     QButtonGroup m_button_group;
@@ -66,6 +68,8 @@ private:
     const int m_inactivity_duration = 1000;
 
     QMap<int,HostMAC> m_server_map;
+    HostMAC m_wait_for_server;
+    GamepadMessageBox* m_splash_wait;
 
     int nextId(int id = -1);
     void addButton(DisplayServerButton* button, const HostMAC &host, int id  );
@@ -87,7 +91,11 @@ private:
 
     void grabControls();
     void releaseControls(bool release_gamepad = false);
+    void Exit();
+    void connectToServer(DisplayServer *server);
+    DisplayServerButton::EState GetServerState(DisplayServer &display_server);
 private slots:
+    void wakeUpTimeOut();
     void onButtonToggled( int id, bool checked );
     void onButtonTrigered();
 //legacy
@@ -102,6 +110,7 @@ private slots:
     void UpdateGamepads();
 
     void OnStreamWindowClosed();
+    void OnStreamWindowDestroyed();
 };
 
 #endif // STEAMDECKMAINWINDOW_H

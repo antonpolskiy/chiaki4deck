@@ -4,7 +4,7 @@
 #include <streamwindow.h>
 
 #include <QCoreApplication>
-#include <QMessageBox>
+#include "gamepadmessagebox.h"
 #include <QByteArray>
 #include <QTimer>
 #include "controllerevent.h"
@@ -108,7 +108,7 @@ ControllerManager::ControllerManager(QObject *parent)
 	if(SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
 	{
 		const char *err = SDL_GetError();
-		QMessageBox::critical(nullptr, "SDL Init", tr("Failed to initialized SDL Gamecontroller: %1").arg(err ? err : ""));
+        GamepadMessageBox::critical(nullptr, "SDL Init", tr("Failed to initialized SDL Gamecontroller: %1").arg(err ? err : ""));
 	}
 
 	auto timer = new QTimer(this);
